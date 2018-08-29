@@ -9,15 +9,19 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.View;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class IMEditText extends android.support.v7.widget.AppCompatEditText {
 
+    private boolean isNeedATClick = true;
 
     public IMEditText(Context context) {
         super(context);
@@ -62,9 +66,12 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
             int start = matcherEmotion.start();
             Bitmap imgBitmap;
 
-            if(key.startsWith("[@")){
-                imgBitmap = str2Bitmap(key.substring(1,key.length()-1));
-            }else{
+            boolean isAT = key.startsWith("[@");
+            String ATName = null;
+            if (isAT) {
+                ATName = key.substring(1, key.length() - 1);
+                imgBitmap = str2Bitmap(ATName);
+            } else {
                 imgBitmap = BitmapFactory.decodeResource(resources, str2Res(key));
             }
 
@@ -73,11 +80,22 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
 
             ImageSpan span = new ImageSpan(getContext(), imgBitmap);
             spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (isAT && isNeedATClick) {
+                final String finalATName = ATName;
+                ClickableSpan clickableSpan = new ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        L.i("ATName:"+finalATName);
+                    }
+                };
+                spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                setMovementMethod(LinkMovementMethod.getInstance());
+            }
         }
         return spannableString;
     }
 
-   private static int str2Res(String content) {
+    private static int str2Res(String content) {
         switch (content) {
             case "[1]": {
                 return R.drawable.icon1;
@@ -96,14 +114,25 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
         }
     }
 
-    private Bitmap str2Bitmap(String content){
-        Bitmap bmp = Bitmap.createBitmap(200,100, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-        Paint paint  = new Paint();
+    private Bitmap str2Bitmap(String content) {
+        Paint paint = new Paint();
         paint.setColor(Color.BLUE);
         paint.setAntiAlias(true);
         paint.setTextSize(getTextSize());
-        canvas.drawText(content, 0,50, paint);
+
+        Paint.FontMetrics metrics = paint.getFontMetrics();
+        int height = (int) (metrics.descent - metrics.ascent);
+//        Rect rect = new Rect();
+//        paint.getTextBounds(content,0,content.length(), rect);
+//        int height = rect.height();
+
+        int width = (int) paint.measureText(content, 0, content.length());
+
+        L.i("width:" + width);
+        L.i("height:" + height);
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+        canvas.drawText(content, 0, height - 12, paint);
         return bmp;
     }
 
@@ -111,7 +140,7 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
         dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
     }
 
-    public void at(String content){
+    public void at(String content) {
         addIcon(content);
     }
 
