@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.witcher.imedittext.IMEditText
+        android:id="@+id/et_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+<LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_margin="10dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:id="@+id/icon1"
+            android:src="@drawable/icon1" />
+
+        <ImageView
+            android:id="@+id/icon2"
+            android:layout_margin="10dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/icon2" />
+
+        <ImageView
+            android:id="@+id/icon3"
+            android:layout_margin="10dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/icon3" />
+
+        <ImageView
+            android:id="@+id/icon4"
+            android:layout_margin="10dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/icon4" />
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/test1"
+            android:text="信息"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/test2"
+            android:text="删除"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <Button
+            android:text="\@大胖猫"
+            android:id="@+id/tv_at1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <Button
+            android:text="\@大黄"
+            android:id="@+id/tv_at2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</LinearLayout>
+</LinearLayout>
