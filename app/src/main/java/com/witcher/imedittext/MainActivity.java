@@ -67,10 +67,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             break;
             case R.id.tv_at2:{
-                editText.at("[@大黄]");
+                editText.at("[@大黄狗]");
             }
             break;
             case R.id.tv_huati:{
+                editText.fullTopic("[#年度最热话题#]");
             }
 
             break;

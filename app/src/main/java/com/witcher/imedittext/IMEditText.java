@@ -1,7 +1,6 @@
 package com.witcher.imedittext;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -24,9 +23,20 @@ import java.util.regex.Pattern;
 
 import androidx.appcompat.widget.AppCompatEditText;
 
+/**
+ * 1. 选择一个人@  @部分整体删除 点击
+ * 2  选择一个话题#话题#，#话题#部分整体删除 点击 FullTpoic
+ * 3  通过识别输入内容 识别出#话题# 并且高亮，话题内容可以选中修改 InputTopic
+ * 4  输入一个表情
+ */
 public class IMEditText extends AppCompatEditText {
 
-    private boolean isNeedATClick = true;
+    private boolean isNeedATClick = true;//@人是否需要点击事件
+    //对应2 是否识别手动输入修改的#话题#
+    private boolean isNeedInputTopic = true;
+
+    private Paint mAtPaint,mFullTopicPaint;
+
 
     public IMEditText(Context context) {
         super(context);
@@ -44,53 +54,53 @@ public class IMEditText extends AppCompatEditText {
     }
 
     private void init() {
-        addTextChangedListener(new TextWatcher() {
-            String lastContent;
-            int index;
-            int offset;
+        mAtPaint = new Paint();
+        mAtPaint.setColor(Color.BLUE);
+        mAtPaint.setAntiAlias(true);
+        mAtPaint.setTextSize(getTextSize());
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                offset = 0;
-                lastContent = s.toString();
-                index = getSelectionEnd();
-                offset = offset+ after;
-            }
+        mFullTopicPaint= new Paint();
+        mFullTopicPaint.setColor(Color.GREEN);
+        mFullTopicPaint.setAntiAlias(true);
+        mFullTopicPaint.setTextSize(getTextSize());
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                offset = offset - before;
-            }
+        if (isNeedInputTopic) {
+            addTextChangedListener(new TextWatcher() {
+                String lastContent;
+                int index;
+                int offset;
 
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (s.toString().equals(lastContent)) {
-                    return;
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    offset = 0;
+                    lastContent = s.toString();
+                    index = getSelectionEnd();
+                    offset = offset + after;
                 }
-                notifyContent();
-                setSelection(index + offset);
-            }
-        });
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    offset = offset - before;
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (s.toString().equals(lastContent)) {
+                        return;
+                    }
+                    notifyContent();
+                    setSelection(index + offset);
+                }
+            });
+        }
     }
-
-
-    public void addIcon(String source) {
-        //改成在下标位置添加
-        int index = getSelectionEnd();
-        StringBuilder sb = new StringBuilder(getText().toString());
-        sb.insert(index, source);
-
-        setText(getEmotionContent(sb.toString()));
-
-        setSelection(index + source.length());
-    }
-
-    SpannableString spannableString;
 
     private SpannableString getEmotionContent(String content) {
         SpannableString spannableString = new SpannableString(content);
-        Resources resources = getResources();
-        String regexEmotion = "\\[([\u4e00-\u9fa5|\\u0040\\w])+]|\\u0023+(\\w)+\\u0023";//|\u0023\w\u0023
+        String regexEmotion = "\\[([\u4e00-\u9fa5|\\u0040\\w|\\u0023\\w\\u0023])+]";
+        if (isNeedInputTopic) {
+            regexEmotion = regexEmotion + "|\\u0023+(\\w)+\\u0023";
+        }
         //u4e00-u9fa5是基本中文区间  u0040是"@"符号  u0023是#号
         Pattern patternEmotion = Pattern.compile(regexEmotion);
         Matcher matcherEmotion = patternEmotion.matcher(spannableString);
@@ -98,77 +108,76 @@ public class IMEditText extends AppCompatEditText {
         while (matcherEmotion.find()) {
             String key = matcherEmotion.group();
             int start = matcherEmotion.start();
-            if (key.startsWith("#") && key.endsWith("#")) {
-                ForegroundColorSpan redSpan = new ForegroundColorSpan(Color.RED);
-                spannableString.setSpan(redSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (isNeedInputTopic && key.startsWith("#") && key.endsWith("#")) {
+                handlerInputTopic(spannableString,key,start);
             } else {
-                Bitmap imgBitmap;
-                boolean isAT = key.startsWith("[@");
-                String ATName = null;
-                if (isAT) {
-                    ATName = key.substring(1, key.length() - 1);
-                    imgBitmap = str2Bitmap(ATName);
+                if (key.startsWith("[@")) {
+                    handlerAt(spannableString,key, start);
+                } else if (key.startsWith("[#") && key.endsWith("#]")) {
+                    handlerFullTopic(spannableString,key, start);
                 } else {
-                    imgBitmap = BitmapFactory.decodeResource(resources, str2Res(key));
-                }
-                ImageSpan span = new ImageSpan(getContext(), imgBitmap);
-                spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                if (isAT && isNeedATClick) {
-                    final String finalATName = ATName;
-                    ClickableSpan clickableSpan = new ClickableSpan() {
-                        @Override
-                        public void onClick(View widget) {
-                            L.i("ATName:" + finalATName);
-                        }
-                    };
-                    spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    setMovementMethod(LinkMovementMethod.getInstance());
+                    handlerEmoji(spannableString,key, start);
                 }
             }
         }
-        this.spannableString = spannableString;
         return spannableString;
     }
 
-    public void notifyContent() {
-        setText(getEmotionContent(getText().toString()));
-    }
-
-    private static int str2Res(String content) {
-        switch (content) {
-            case "[1]": {
-                return R.drawable.icon1;
-            }
-            case "[2]": {
-                return R.drawable.icon2;
-            }
-            case "[3]": {
-                return R.drawable.icon3;
-            }
-            case "[4]": {
-                return R.drawable.icon4;
-            }
-            default:
-                return R.drawable.icon1;
+    private void handlerAt(SpannableString spannableString, String key, int start) {
+        Bitmap imgBitmap;
+        String ATName = key.substring(1, key.length() - 1);
+        imgBitmap = str2Bitmap(ATName,mAtPaint);
+        ImageSpan span = new ImageSpan(getContext(), imgBitmap);
+        spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (isNeedATClick) {
+            final String finalATName = ATName;
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(View widget) {
+                    L.i("@的名字:" + finalATName);
+                }
+            };
+            spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            setMovementMethod(LinkMovementMethod.getInstance());
         }
     }
 
-    private Bitmap str2Bitmap(String content) {
-        Paint paint = new Paint();
-        paint.setColor(Color.BLUE);
-        paint.setAntiAlias(true);
-        paint.setTextSize(getTextSize());
+    private void handlerFullTopic(SpannableString spannableString, String key, int start) {
+        Bitmap imgBitmap;
+        String topic = key.substring(1, key.length() - 1);
+        imgBitmap = str2Bitmap(topic,mFullTopicPaint);
+        ImageSpan span = new ImageSpan(getContext(), imgBitmap);
+        spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        final String finalTopic = topic;
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                L.i("话题:" + finalTopic);
+            }
+        };
+        spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        setMovementMethod(LinkMovementMethod.getInstance());
+    }
 
+    private void handlerInputTopic(SpannableString spannableString, String key, int start){
+        ForegroundColorSpan redSpan = new ForegroundColorSpan(Color.RED);
+        spannableString.setSpan(redSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private void handlerEmoji(SpannableString spannableString, String key, int start) {
+        Bitmap imgBitmap = BitmapFactory.decodeResource(getResources(), StrToResUtil.str2Res(key));
+        ImageSpan span = new ImageSpan(getContext(), imgBitmap);
+        spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private void notifyContent() {
+        setText(getEmotionContent(getText().toString()));
+    }
+
+    private Bitmap str2Bitmap(String content,Paint paint) {
         Paint.FontMetrics metrics = paint.getFontMetrics();
         int height = (int) (metrics.descent - metrics.ascent);
-//        Rect rect = new Rect();
-//        paint.getTextBounds(content,0,content.length(), rect);
-//        int height = rect.height();
-
         int width = (int) paint.measureText(content, 0, content.length());
-
-        L.i("width:" + width);
-        L.i("height:" + height);
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
         canvas.drawText(content, 0, height - 12, paint);
@@ -179,7 +188,21 @@ public class IMEditText extends AppCompatEditText {
         dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
     }
 
+    public void addIcon(String source) {
+        //改成在下标位置添加
+        int index = getSelectionEnd();
+        StringBuilder sb = new StringBuilder(getText().toString());
+        sb.insert(index, source);
+        setText(getEmotionContent(sb.toString()));
+        setSelection(index + source.length());
+    }
+
     public void at(String content) {
+        addIcon(content);
+    }
+
+    //对应3 加一个整体的话题 整体删除和点击
+    public void fullTopic(String content) {
         addIcon(content);
     }
 

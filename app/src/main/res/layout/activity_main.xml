@@ -71,8 +71,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <Button
-            android:visibility="gone"
-            android:text="加个话题"
+            android:text="加个和@一样整体点击删除的话题"
             android:id="@+id/tv_huati"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
