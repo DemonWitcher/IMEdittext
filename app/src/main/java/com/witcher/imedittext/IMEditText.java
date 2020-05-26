@@ -7,10 +7,13 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
@@ -19,7 +22,9 @@ import android.view.View;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class IMEditText extends android.support.v7.widget.AppCompatEditText {
+import androidx.appcompat.widget.AppCompatEditText;
+
+public class IMEditText extends AppCompatEditText {
 
     private boolean isNeedATClick = true;
 
@@ -39,6 +44,33 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
     }
 
     private void init() {
+        addTextChangedListener(new TextWatcher() {
+            String lastContent;
+            int index;
+            int offset;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                offset = 0;
+                lastContent = s.toString();
+                index = getSelectionEnd();
+                offset = offset+ after;
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                offset = offset - before;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.toString().equals(lastContent)) {
+                    return;
+                }
+                notifyContent();
+                setSelection(index + offset);
+            }
+        });
     }
 
 
@@ -53,46 +85,53 @@ public class IMEditText extends android.support.v7.widget.AppCompatEditText {
         setSelection(index + source.length());
     }
 
+    SpannableString spannableString;
+
     private SpannableString getEmotionContent(String content) {
         SpannableString spannableString = new SpannableString(content);
         Resources resources = getResources();
-        String regexEmotion = "\\[([\u4e00-\u9fa5|\\u0040\\w])+]";
-        //u4e00-u9fa5是基本中文区间  u0040是"@"符号
+        String regexEmotion = "\\[([\u4e00-\u9fa5|\\u0040\\w])+]|\\u0023+(\\w)+\\u0023";//|\u0023\w\u0023
+        //u4e00-u9fa5是基本中文区间  u0040是"@"符号  u0023是#号
         Pattern patternEmotion = Pattern.compile(regexEmotion);
         Matcher matcherEmotion = patternEmotion.matcher(spannableString);
 
         while (matcherEmotion.find()) {
             String key = matcherEmotion.group();
             int start = matcherEmotion.start();
-            Bitmap imgBitmap;
-
-            boolean isAT = key.startsWith("[@");
-            String ATName = null;
-            if (isAT) {
-                ATName = key.substring(1, key.length() - 1);
-                imgBitmap = str2Bitmap(ATName);
+            if (key.startsWith("#") && key.endsWith("#")) {
+                ForegroundColorSpan redSpan = new ForegroundColorSpan(Color.RED);
+                spannableString.setSpan(redSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
-                imgBitmap = BitmapFactory.decodeResource(resources, str2Res(key));
-            }
-
-//            int size = (int) getTextSize() * 13 / 10;
-//            Bitmap scaleBitmap = Bitmap.createScaledBitmap(imgBitmap, size, size, true);
-
-            ImageSpan span = new ImageSpan(getContext(), imgBitmap);
-            spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            if (isAT && isNeedATClick) {
-                final String finalATName = ATName;
-                ClickableSpan clickableSpan = new ClickableSpan() {
-                    @Override
-                    public void onClick(View widget) {
-                        L.i("ATName:"+finalATName);
-                    }
-                };
-                spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                setMovementMethod(LinkMovementMethod.getInstance());
+                Bitmap imgBitmap;
+                boolean isAT = key.startsWith("[@");
+                String ATName = null;
+                if (isAT) {
+                    ATName = key.substring(1, key.length() - 1);
+                    imgBitmap = str2Bitmap(ATName);
+                } else {
+                    imgBitmap = BitmapFactory.decodeResource(resources, str2Res(key));
+                }
+                ImageSpan span = new ImageSpan(getContext(), imgBitmap);
+                spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (isAT && isNeedATClick) {
+                    final String finalATName = ATName;
+                    ClickableSpan clickableSpan = new ClickableSpan() {
+                        @Override
+                        public void onClick(View widget) {
+                            L.i("ATName:" + finalATName);
+                        }
+                    };
+                    spannableString.setSpan(clickableSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    setMovementMethod(LinkMovementMethod.getInstance());
+                }
             }
         }
+        this.spannableString = spannableString;
         return spannableString;
+    }
+
+    public void notifyContent() {
+        setText(getEmotionContent(getText().toString()));
     }
 
     private static int str2Res(String content) {

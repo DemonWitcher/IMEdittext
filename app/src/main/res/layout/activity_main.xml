@@ -70,6 +70,12 @@
             android:id="@+id/tv_at2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
+        <Button
+            android:visibility="gone"
+            android:text="加个话题"
+            android:id="@+id/tv_huati"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 </LinearLayout>
 </LinearLayout>

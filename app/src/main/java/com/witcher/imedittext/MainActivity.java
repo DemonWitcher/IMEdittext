@@ -1,16 +1,17 @@
 package com.witcher.imedittext;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     private IMEditText editText;
     private ImageView iv1,iv2,iv3,iv4;
-    private Button test1,test2,at1,at2;
+    private Button test1,test2,at1,at2,huati;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         test2 = findViewById(R.id.test2);
         at1 = findViewById(R.id.tv_at1);
         at2 = findViewById(R.id.tv_at2);
+        huati = findViewById(R.id.tv_huati);
         iv1.setOnClickListener(this);
         iv2.setOnClickListener(this);
         iv3.setOnClickListener(this);
@@ -34,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         test2.setOnClickListener(this);
         at1.setOnClickListener(this);
         at2.setOnClickListener(this);
+        huati.setOnClickListener(this);
     }
 
     @Override
@@ -66,6 +69,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.tv_at2:{
                 editText.at("[@大黄]");
             }
+            break;
+            case R.id.tv_huati:{
+            }
+
             break;
         }
     }
