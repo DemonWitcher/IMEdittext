@@ -97,9 +97,11 @@ public class IMEditText extends AppCompatEditText {
 
     private SpannableString getEmotionContent(String content) {
         SpannableString spannableString = new SpannableString(content);
-        String regexEmotion = "\\[([\u4e00-\u9fa5|\\u0040\\w|\\u0023\\w\\u0023])+]";
+        String regexEmotion = "\\[([(\u4e00-\u9fa5)|" +
+                "(\\u0040\\w)|" +
+                "(\\u0023\\w\\u0023)])+]";
         if (isNeedInputTopic) {
-            regexEmotion = regexEmotion + "|\\u0023+(\\w)+\\u0023";
+            regexEmotion = regexEmotion + "|\\u0023+(\\w|!|！|\\?|？|$|￥|-|=|\\+|\\*|、|/|,|，|\\.|。|<|>|;|:|：|'|\"|【|】|\\&|^|%|~|`|·|……|～)+\\u0023";
         }
         //u4e00-u9fa5是基本中文区间  u0040是"@"符号  u0023是#号
         Pattern patternEmotion = Pattern.compile(regexEmotion);
