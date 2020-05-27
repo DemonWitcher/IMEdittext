@@ -28,27 +28,29 @@ import androidx.appcompat.widget.AppCompatEditText;
  * 2  选择一个话题#话题#，#话题#部分整体删除 点击 FullTpoic
  * 3  通过识别输入内容 识别出#话题# 并且高亮，话题内容可以选中修改 InputTopic
  * 4  输入一个表情
+ * <p>
+ * 和IMEditText 区别在于 这个类可以在手输话题中添加表情，@人，选择话题等
  */
-public class IMEditText extends AppCompatEditText {
+public class IMEditText2 extends AppCompatEditText {
 
     private boolean isNeedATClick = true;//@人是否需要点击事件
     //对应2 是否识别手动输入修改的#话题#
     private boolean isNeedInputTopic = true;
 
-    private Paint mAtPaint,mFullTopicPaint;
+    private Paint mAtPaint, mFullTopicPaint;
 
 
-    public IMEditText(Context context) {
+    public IMEditText2(Context context) {
         super(context);
         init();
     }
 
-    public IMEditText(Context context, AttributeSet attrs) {
+    public IMEditText2(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public IMEditText(Context context, AttributeSet attrs, int defStyleAttr) {
+    public IMEditText2(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
@@ -59,7 +61,7 @@ public class IMEditText extends AppCompatEditText {
         mAtPaint.setAntiAlias(true);
         mAtPaint.setTextSize(getTextSize());
 
-        mFullTopicPaint= new Paint();
+        mFullTopicPaint = new Paint();
         mFullTopicPaint.setColor(Color.GREEN);
         mFullTopicPaint.setAntiAlias(true);
         mFullTopicPaint.setTextSize(getTextSize());
@@ -97,22 +99,29 @@ public class IMEditText extends AppCompatEditText {
 
     private SpannableString getEmotionContent(String content) {
         SpannableString spannableString = new SpannableString(content);
-        String regexEmotion = "\\[([(\u4e00-\u9fa5)|" +
-                "(\\u0040\\w)|" +
-                "(\\u0023\\w\\u0023)])+]";
-        if (isNeedInputTopic) {
-            regexEmotion = regexEmotion + "|\\u0023+(\\w|!|！|\\?|？|$|￥|-|=|\\+|\\*|、|/|,|，|\\.|。|<|>|;|:|：|'|\"|【|】|\\&|^|%|~|`|·|……|～|@)+\\u0023";
-        }
+            String regexEmotionInputTopic =  "\\u0023+(\\w|!|！|\\?|？|$|￥|-|=|\\+|\\*|、|/|,|，|\\.|。|<|>|;|:|：|'|\"|【|】|\\&|^|%|~|`|·|……|～|@|\\[|\\])+\\u0023";
         //u4e00-u9fa5是基本中文区间  u0040是"@"符号  u0023是#号
-        Pattern patternEmotion = Pattern.compile(regexEmotion);
-        Matcher matcherEmotion = patternEmotion.matcher(spannableString);
+        Pattern patternEmotionInputTopic = Pattern.compile(regexEmotionInputTopic);
+        Matcher matcherEmotionInputTopic = patternEmotionInputTopic.matcher(spannableString);
 
-        while (matcherEmotion.find()) {
-            String key = matcherEmotion.group();
-            int start = matcherEmotion.start();
+        while (matcherEmotionInputTopic.find()) {
+            String key = matcherEmotionInputTopic.group();
+            int start = matcherEmotionInputTopic.start();
             if (isNeedInputTopic && key.startsWith("#") && key.endsWith("#")) {
                 handlerInputTopic(spannableString,key,start);
-            } else if (key.startsWith("[@")) {
+            }
+        }
+
+        String regexEmotionOther = "\\[([(\u4e00-\u9fa5)|" +
+                "(\\u0040\\w)|" +
+                "(\\u0023\\w\\u0023)])+]";
+        Pattern patternEmotionOther = Pattern.compile(regexEmotionOther);
+        Matcher matcherEmotionOther = patternEmotionOther.matcher(spannableString);
+
+        while (matcherEmotionOther.find()) {
+            String key = matcherEmotionOther.group();
+            int start = matcherEmotionOther.start();
+            if (key.startsWith("[@")) {
                 handlerAt(spannableString,key, start);
             } else if (key.startsWith("[#") && key.endsWith("#]")) {
                 handlerFullTopic(spannableString,key, start);
@@ -123,10 +132,11 @@ public class IMEditText extends AppCompatEditText {
         return spannableString;
     }
 
+
     private void handlerAt(SpannableString spannableString, String key, int start) {
         Bitmap imgBitmap;
         String ATName = key.substring(1, key.length() - 1);
-        imgBitmap = str2Bitmap(ATName,mAtPaint);
+        imgBitmap = str2Bitmap(ATName, mAtPaint);
         ImageSpan span = new ImageSpan(getContext(), imgBitmap);
         spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         if (isNeedATClick) {
@@ -145,7 +155,7 @@ public class IMEditText extends AppCompatEditText {
     private void handlerFullTopic(SpannableString spannableString, String key, int start) {
         Bitmap imgBitmap;
         String topic = key.substring(1, key.length() - 1);
-        imgBitmap = str2Bitmap(topic,mFullTopicPaint);
+        imgBitmap = str2Bitmap(topic, mFullTopicPaint);
         ImageSpan span = new ImageSpan(getContext(), imgBitmap);
         spannableString.setSpan(span, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         final String finalTopic = topic;
@@ -159,7 +169,7 @@ public class IMEditText extends AppCompatEditText {
         setMovementMethod(LinkMovementMethod.getInstance());
     }
 
-    private void handlerInputTopic(SpannableString spannableString, String key, int start){
+    private void handlerInputTopic(SpannableString spannableString, String key, int start) {
         ForegroundColorSpan redSpan = new ForegroundColorSpan(Color.RED);
         spannableString.setSpan(redSpan, start, start + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
@@ -174,7 +184,7 @@ public class IMEditText extends AppCompatEditText {
         setText(getEmotionContent(getText().toString()));
     }
 
-    private Bitmap str2Bitmap(String content,Paint paint) {
+    private Bitmap str2Bitmap(String content, Paint paint) {
         Paint.FontMetrics metrics = paint.getFontMetrics();
         int height = (int) (metrics.descent - metrics.ascent);
         int width = (int) paint.measureText(content, 0, content.length());
